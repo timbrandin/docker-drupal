@@ -8,10 +8,17 @@ Quick and easy to use Docker container for your *local Drupal development*. It c
 Getting started
 -------
 
-**OSX/Windows**: Use [Kitematic](https://kitematic.com/) and search and download `timbrandin/drupal`
+#### OSX/Windows
 
-**Linux**: Follow the guide on running it below.
+1. Use [Kitematic](https://kitematic.com/) and search and download [`timbrandin/drupal`](https://registry.hub.docker.com/u/timbrandin/drupal).
+2. Mount your Drupal site root (the folder containing index.php) using the existing Volume.
+3. Boom! You can now install Drupal or change the settings.php to point to an existing database.
 
+#### Linux
+
+1. Follow the guide on running it below.
+2. Mount your Drupal site root (the folder containing index.php) using the existing Volume.
+3. Boom! You can now install Drupal or change the settings.php to point to an existing database.
 
 Summary
 -------
