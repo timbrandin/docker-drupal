@@ -10,9 +10,9 @@ Summary
 
 This image contains:
 
-* Apache 2.2
-* MySQL 5.5
-* PHP 5.6
+* Apache 2.4.7
+* MySQL 5.5.44-0ubuntu0.12.04.1
+* PHP 5.6.11-1+deb.sury.org~trusty+1
 * Drush 7.0
 * Drupal 7.38
 * Composer
