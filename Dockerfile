@@ -1,29 +1,40 @@
-FROM debian:wheezy
-MAINTAINER Wouter Admiraal <wad@wadmiraal.net>
+FROM ubuntu:trusty
+MAINTAINER Tim Brandin <tim.brandin@gmail.com>
 ENV DEBIAN_FRONTEND noninteractive
 RUN rm /bin/sh && ln -s /bin/bash /bin/sh
 
 # Install packages.
 RUN apt-get update
 RUN apt-get install -y \
-	vim \
-	git \
-	apache2 \
-	php-apc \
-	php5-fpm \
-	php5-cli \
-	php5-mysql \
-	php5-gd \
-	php5-curl \
-	libapache2-mod-php5 \
-	curl \
-	mysql-server \
-	mysql-client \
-	openssh-server \
-	phpmyadmin \
-	wget \
-	supervisor
+  nano \
+  git \
+  apache2 \
+  php5 \
+  php-apc \
+  php5-fpm \
+  php5-gd \
+  php5-curl \
+  php5-mysql \
+  php5-xdebug \
+  php5-intl \
+  php5-mcrypt \
+	php5-dev \
+  php-pear \
+  build-essential \
+  libapache2-mod-php5 \
+  libapache2-mod-auth-mysql \
+  mysql-server \
+  openssh-server \
+  curl \
+  supervisor
 RUN apt-get clean
+
+# Install PHP 5.6.
+RUN apt-get install -y software-properties-common
+RUN add-apt-repository ppa:ondrej/php5-5.6
+RUN apt-get update
+RUN apt-get upgrade -y --force-yes
+RUN apt-get install -y --force-yes php5
 
 # Install Composer.
 RUN curl -sS https://getcomposer.org/installer | php
@@ -35,47 +46,14 @@ RUN composer global update
 # Unfortunately, adding the composer vendor dir to the PATH doesn't seem to work. So:
 RUN ln -s /root/.composer/vendor/bin/drush /usr/local/bin/drush
 
-# Setup PHP.
-RUN sed -i 's/display_errors = Off/display_errors = On/' /etc/php5/apache2/php.ini
-RUN sed -i 's/display_errors = Off/display_errors = On/' /etc/php5/cli/php.ini
-
-# Setup Blackfire.
-# Get the sources and install the Debian packages.
-# We create our own start script. If the environment variables are set, we
-# simply start Blackfire in the foreground. If not, we create a dummy daemon
-# script that simply loops indefinitely. This is to trick Supervisor into
-# thinking the program is running and avoid unnecessary error messages.
-RUN wget -O - https://packagecloud.io/gpg.key | apt-key add -
-RUN echo "deb http://packages.blackfire.io/debian any main" > /etc/apt/sources.list.d/blackfire.list
-RUN apt-get update
-RUN apt-get install -y blackfire-agent blackfire-php
-RUN echo -e '#!/bin/bash\n\
-if [[ -z "$BLACKFIREIO_SERVER_ID" || -z "$BLACKFIREIO_SERVER_TOKEN" ]]; then\n\
-    while true; do\n\
-        sleep 1000\n\
-    done\n\
-else\n\
-    /usr/bin/blackfire-agent -server-id="$BLACKFIREIO_SERVER_ID" -server-token="$BLACKFIREIO_SERVER_TOKEN"\n\
-fi\n\
-' > /usr/local/bin/launch-blackfire
-RUN chmod +x /usr/local/bin/launch-blackfire
-RUN mkdir -p /var/run/blackfire
-
 # Setup Apache.
-# In order to run our Simpletest tests, we need to make Apache
-# listen on the same port as the one we forwarded. Because we use
-# 8080 by default, we set it up for that port.
-RUN sed -i 's/AllowOverride None/AllowOverride All/' /etc/apache2/sites-available/default
-RUN echo "Listen 8080" >> /etc/apache2/ports.conf
-RUN sed -i 's/VirtualHost *:80/VirtualHost */' /etc/apache2/sites-available/default
-RUN a2enmod rewrite
+RUN a2enmod rewrite authz_groupfile dav_fs dav reqtimeout
 
-# Setup PHPMyAdmin
-RUN echo -e "\n# Include PHPMyAdmin configuration\nInclude /etc/phpmyadmin/apache.conf\n" >> /etc/apache2/apache2.conf
-RUN sed -i -e "s/\/\/ \$cfg\['Servers'\]\[\$i\]\['AllowNoPassword'\]/\$cfg\['Servers'\]\[\$i\]\['AllowNoPassword'\]/g" /etc/phpmyadmin/config.inc.php
+# Adding custom apache VirtualHost configuration.
+COPY default.conf /etc/apache2/sites-available/000-default.conf
 
-# Setup MySQL, bind on all addresses.
-RUN sed -i -e 's/^bind-address\s*=\s*127.0.0.1/#bind-address = 127.0.0.1/' /etc/mysql/my.cnf
+# Adding custom mysql settings.
+COPY my.cnf /etc/mysql/my.cnf
 
 # Setup SSH.
 RUN echo 'root:root' | chpasswd
@@ -88,26 +66,35 @@ RUN sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so
 RUN echo -e '[program:apache2]\ncommand=/bin/bash -c "source /etc/apache2/envvars && exec /usr/sbin/apache2 -DFOREGROUND"\nautorestart=true\n\n' >> /etc/supervisor/supervisord.conf
 RUN echo -e '[program:mysql]\ncommand=/usr/bin/pidproxy /var/run/mysqld/mysqld.pid /usr/sbin/mysqld\nautorestart=true\n\n' >> /etc/supervisor/supervisord.conf
 RUN echo -e '[program:sshd]\ncommand=/usr/sbin/sshd -D\n\n' >> /etc/supervisor/supervisord.conf
-RUN echo -e '[program:blackfire]\ncommand=/usr/local/bin/launch-blackfire\n\n' >> /etc/supervisor/supervisord.conf
 
-# Install Drupal.
-RUN rm -rf /var/www
-RUN cd /var && \
-	drush dl drupal && \
-	mv /var/drupal* /var/www
-RUN mkdir -p /var/www/sites/default/files && \
-	chmod a+w /var/www/sites/default -R && \
-	mkdir /var/www/sites/all/modules/contrib -p && \
-	mkdir /var/www/sites/all/modules/custom && \
-	mkdir /var/www/sites/all/themes/contrib -p && \
-	mkdir /var/www/sites/all/themes/custom && \
-	chown -R www-data:www-data /var/www/
-RUN /etc/init.d/mysql start && \
-	cd /var/www && \
-	drush si -y minimal --db-url=mysql://root:@localhost/drupal --account-pass=admin && \
-	drush dl admin_menu devel && \
-	drush en -y admin_menu simpletest && \
-	drush vset "admin_menu_tweak_modules" 1
+# Adding custom php settings.
+COPY php.ini /etc/php5/mods-available/custom.ini
+RUN ln -s /etc/php5/mods-available/custom.ini /etc/php5/cli/conf.d/zzzz_custom.ini && \
+  ln -s /etc/php5/mods-available/custom.ini /etc/php5/apache2/conf.d/zzzz_custom.ini
+
+# Adding pretty terminal.
+COPY .bash_aliases /root/.bash_aliases
+COPY .bash_git /root/.bash_git
+RUN echo "if [ -f ~/.bash_aliases ] ; then source ~/.bash_aliases; fi" >> /root/.bashrc && \
+  echo "if [ -f ~/.bash_git ] ; then source ~/.bash_git; fi" >> /root/.bashrc
+
+# Adding apc upload progress.
+RUN echo "apc.rfc1867=1" >> /etc/php5/mods-available/apcu.ini
+
+# Set user 1000 and group staff to www-data, enables write permission.
+# https://github.com/boot2docker/boot2docker/issues/581#issuecomment-114804894
+RUN usermod -u 1000 www-data
+RUN usermod -G staff www-data
+
+WORKDIR /var/www
+
+RUN rm -rf /var/www && \
+  mkdir -p /var/www && \
+  chown -R www-data:www-data /var/www
+
+VOLUME  ["/var/www"]
+
+ENV SHELL /bin/bash
 
 EXPOSE 80 3306 22
 CMD exec supervisord -n

@@ -16,14 +16,10 @@ This image contains:
 * Drush 7.0
 * Drupal 7.38
 * Composer
-* PHPMyAdmin
 * Blackfire
-
-When launching, the container will contain a fully-installed, ready to use Drupal site.
 
 ### Passwords
 
-* Drupal: `admin:admin`
 * MySQL: `root:` (no password)
 * SSH: `root:root`
 
@@ -32,13 +28,6 @@ When launching, the container will contain a fully-installed, ready to use Drupa
 * 80 (Apache)
 * 22 (SSH)
 * 3306 (MySQL)
-
-### Environment variables
-
-If you wish to enable [Blackfire](https://blackfire.io) for profiling, set the following environment variables:
-
-* `BLACKFIREIO_SERVER_ID`: Your Blackfire server ID
-* `BLACKFIREIO_SERVER_TOKEN`: Your Blackfire server token
 
 Tutorial
 --------
@@ -52,7 +41,7 @@ Installation
 
 Clone the repository locally and build it:
 
-	git clone https://github.com/wadmiraal/docker-drupal.git
+	git clone https://github.com/timbrandin/docker-drupal.git
 	cd docker-drupal
 	docker build -t yourname/drupal .
 
@@ -60,7 +49,7 @@ Clone the repository locally and build it:
 
 Get the image:
 
-	docker pull wadmiraal/drupal
+	docker pull timbrandin/drupal
 
 Running it
 ----------
@@ -71,13 +60,13 @@ The container exposes its `80` port (Apache), its `3306` port (MySQL) and its `2
 
 Here's an example just running the container and forwarding `localhost:8080` and `localhost:8022` to the container:
 
-	docker run -d -p 8080:80 -p 8022:22 -t wadmiraal/drupal
+	docker run -d -p 8080:80 -p 8022:22 -t timbrandin/drupal
 
 ### Writing code locally
 
 Here's an example running the container, forwarding port `8080` like before, but also mounting Drupal's `sites/all/modules/custom/` folder to my local `modules/` folder. I can then start writing code on my local machine, directly in this folder, and it will be available inside the container:
 
-	docker run -d -p 8080:80 -v `pwd`/modules:/var/www/sites/all/modules/custom -t wadmiraal/drupal
+	docker run -d -p 8080:80 -v `pwd`/modules:/var/www/sites/all/modules/custom -t timbrandin/drupal
 
 ### Using Drush
 
