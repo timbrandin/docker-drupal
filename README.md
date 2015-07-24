@@ -3,7 +3,7 @@ Drupal development with Docker
 
 [![](https://badge.imagelayers.io/timbrandin/drupal.svg)](https://imagelayers.io/?images=timbrandin/drupal:latest 'Get your own badge on imagelayers.io')
 
-Quick and easy to use Docker container for your *local Drupal development*. It contains a LAMP stack and an SSH server, along with an up to date version of Drush. It is based on [Debian Wheezy](https://wiki.debian.org/DebianWheezy).
+Quick and easy to use Docker container for your *local Drupal development*. It contains a LAMP stack and an SSH server, along with an up to date version of Drush. It is based on [Ubuntu Trusty](https://wiki.debian.org/DebianWheezy).
 
 Summary
 -------
@@ -12,11 +12,10 @@ This image contains:
 
 * Apache 2.2
 * MySQL 5.5
-* PHP 5.4
+* PHP 5.6
 * Drush 7.0
 * Drupal 7.38
 * Composer
-* Blackfire
 
 ### Passwords
 
