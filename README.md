@@ -62,7 +62,7 @@ docker run -d -P --name drupal -t timbrandin/drupal
 
 > Notice! We're automounting the exposed ports with `-P`.
 
-Here's an example running the container and forwarding `localhost:8080` to the container, (notice on OSX it will be your virtual machine's IP instead of localhost):
+Here's an example running the container and forwarding `localhost:8080` to the container, (notice on OSX/Windows it will be your virtual machine's IP instead of localhost):
 
 ```
 docker run -d -p 8080:80 --name drupal -t timbrandin/drupal
